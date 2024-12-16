@@ -25,16 +25,20 @@ __host__ __device__ bool isin(const char *chars, char c) {
   }
   return false;
 }
-
+// Core data structure representing the BFF language interpreter
 struct Bff {
   static const char *name() { return "bff_noheads"; }
 
+  // Initialize color coding for different characters in visualization
   static void InitByteColors(
       std::array<std::array<uint8_t, 3>, 256> &byte_colors) {
+    
+    // Set default gray colors for all characters
     for (size_t i = 0; i < 256; i++) {
       const uint8_t v = 192 + i / 4;
       byte_colors[i] = {v, v, v};
     }
+    // Special colors for different command types:
     byte_colors[0] = {255, 0, 0};
     byte_colors['['] = byte_colors[']'] = {0, 192, 0};
     byte_colors['+'] = byte_colors['-'] = {200, 0, 200};
@@ -42,11 +46,13 @@ struct Bff {
     byte_colors['<'] = byte_colors['>'] = {0, 128, 220};
     byte_colors['{'] = byte_colors['}'] = {0, 128, 220};
   }
-
+  
+  // Parse input string, handling special null character representation
   static std::string Parse(std::string bff) {
     std::string ret;
     for (size_t i = 0; i < bff.size();) {
       if (bff.substr(i, 3) == "␀") {
+        // Handle special null character encoding
         ret.push_back(0);
         i += 3;
       } else {
@@ -118,17 +124,21 @@ struct Bff {
     PrintProgramInternal(head0_pos, head1_pos, pc_pos, mem, len, mem2, len2);
   }
 
+  // Main interpreter function
   static __device__ size_t Evaluate(uint8_t *tape, size_t stepcount,
                                     bool debug) {
     size_t nskip = 0;
 
-    int pos = 0;
-    int head0_pos = 0;
-    int head1_pos = 0;
+    int pos = 0; // instruction pointer
+    int head0_pos = 0; // primary tape head pointer
+    int head1_pos = 0; // second tape head pointer
 
     size_t i = 0;
+    
+    // Main execution loop
     for (; i < stepcount; i++) {
-      head0_pos = head0_pos & (2 * kSingleTapeSize - 1);
+      // Wrap head positions within tape bounds
+      head0_pos = head0_pos & (2 * kSingleTapeSize - 1); 
       head1_pos = head1_pos & (2 * kSingleTapeSize - 1);
       if (debug) {
         PrintProgramInternal(head0_pos, head1_pos, pos, tape,
